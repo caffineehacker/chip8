@@ -1,6 +1,8 @@
 #include "chip8.h"
 
 #include <cstdio>
+#include <cstdlib>
+#include <ctime>
 
 const unsigned char chip8_fontset[80] =
 {
@@ -28,6 +30,9 @@ chip8::chip8() : pc(0x200), delay_timer(0), sound_timer(0), I(0), sp(0)
 	memset(this->gfx, 0, sizeof(this->gfx));
 	memset(this->v, 0, sizeof(this->v));
 	memset(this->key, 0, sizeof(this->key));
+
+	// Seed the random generator
+	srand(time(nullptr));
 }
 
 
@@ -55,6 +60,22 @@ bool chip8::LoadProgram(const char* path)
 
 void chip8::StepEmulation()
 {
+	// TODO: Consider doing a fixed time per frame other than 1
+	if (this->delay_timer > 0)
+	{
+		this->delay_timer--;
+	}
+
+	if (this->sound_timer > 0)
+	{
+		this->sound_timer--;
+
+		if (this->sound_timer == 0)
+		{
+			// TODO: BEEP!
+		}
+	}
+
 	// Read opcode
 	short opcode = this->memory[this->pc] << 8 | this->memory[this->pc + 1];
 	this->pc += 2;
@@ -63,12 +84,39 @@ void chip8::StepEmulation()
 
 	switch (firstNibble)
 	{
+	case 0x0:
+	{
+		if (opcode == 0x00EE)
+		{
+			// Return
+			this->pc = this->stack[--this->sp];
+			break;
+		}
+		break;
+	}
+	case 0x1:
+	{
+		// 1NNN
+		// Jumps to NNN
+		this->pc = opcode & 0x0FFF;
+		break;
+	}
 	case 0x2:
 	{
 		// 2NNN
 		// Calls subroutine at NNN
 		this->stack[this->sp++] = this->pc;
 		this->pc = opcode & 0x0FFF;
+		break;
+	}
+	case 0x3:
+	{
+		// 3XNN
+		// Skips the next instruction if VX == NN
+		if (this->v[(opcode & 0x0F00) >> 16] == (opcode & 0xFF))
+		{
+			this->pc += 2;
+		}
 		break;
 	}
 	case 0x6:
@@ -78,11 +126,25 @@ void chip8::StepEmulation()
 		this->v[(opcode & 0x0F00) >> 16] = static_cast<unsigned char>(opcode & 0xFF);
 		break;
 	}
+	case 0x7:
+	{
+		// 7XNN
+		// Adds NN to VX
+		this->v[(opcode & 0x0F00) >> 16] += static_cast<unsigned char>(opcode & 0xFF);
+		break;
+	}
 	case 0xa:
 	{
 		// ANNN
 		// Sets I to the address NNN
 		this->I = (opcode & 0x0FFF);
+		break;
+	}
+	case 0xc:
+	{
+		// CXNN
+		// Sets VX to the result of a bitwise and operation on a random number and NN
+		this->v[(opcode & 0x0F00) >> 16] = (opcode & 0xFF) & (rand() % 0x100);
 		break;
 	}
 	case 0xd:
@@ -125,13 +187,42 @@ void chip8::StepEmulation()
 		}
 		break;
 	}
+	case 0xE:
+	{
+		// EX9E
+		// Skips the next instruction if the key stored in VX is pressed.
+		// EXA1
+		// Skips the next instruction if the key stored in VX isn't pressed.
+		if (this->key[(opcode & 0x0F00) >> 16] == ((opcode & 0xFF) == 0x9E))
+		{
+			this->pc += 2;
+		}
+
+#if _DEBUG
+		if ((opcode & 0xFF) != 0x9E && (opcode & 0xFF) != 0xA1)
+		{
+			throw std::exception("Invalid opcode");
+		}
+#endif
+
+		break;
+	}
 	case 0xF:
 	{
-		
 		unsigned char secondByte = static_cast<unsigned char>(opcode & 0xFF);
 		unsigned char secondNibble = static_cast<unsigned char>((opcode & 0x0F00) >> 8);
 		switch (secondByte)
 		{
+		case 0x07:
+		{
+			this->v[secondNibble] = this->delay_timer;
+			break;
+		}
+		case 0x15:
+		{
+			this->delay_timer = this->v[secondNibble];
+			break;
+		}
 		case 0x29:
 		{
 			/* From Wikipedia: Sets I to the location of the sprite for the character in VX.
