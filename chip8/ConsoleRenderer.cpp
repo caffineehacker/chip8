@@ -7,8 +7,10 @@
 ConsoleRenderer::ConsoleRenderer()
 {
 	this->hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-	this->hBuffer = CreateConsoleScreenBuffer(GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, CONSOLE_TEXTMODE_BUFFER, nullptr);
-	SetConsoleActiveScreenBuffer(this->hBuffer);
+	SetConsoleMode(this->hConsole, ENABLE_WINDOW_INPUT);
+	this->hBuffer1 = CreateConsoleScreenBuffer(GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, CONSOLE_TEXTMODE_BUFFER, nullptr);
+	this->hBuffer2 = CreateConsoleScreenBuffer(GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, CONSOLE_TEXTMODE_BUFFER, nullptr);
+	SetConsoleActiveScreenBuffer(this->hBuffer1);
 }
 
 
@@ -26,9 +28,12 @@ void ConsoleRenderer::Render(const unsigned char* buffer)
 	}
 
 	SMALL_RECT output_rect{ 0, 0, 64, 32 };
-	if (0 == WriteConsoleOutput(this->hBuffer, char_info, { 64, 32 }, { 0, 0 }, &output_rect))
+	if (0 == WriteConsoleOutput(this->hBuffer2, char_info, { 64, 32 }, { 0, 0 }, &output_rect))
 	{
 		DWORD error = GetLastError();
 		throw std::exception((std::string("Drawing failed") + itoa(error, nullptr, 10)).c_str());
 	}
+
+	SetConsoleActiveScreenBuffer(this->hBuffer2);
+	std::swap(this->hBuffer1, this->hBuffer2);
 }

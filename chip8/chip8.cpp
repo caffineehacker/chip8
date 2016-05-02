@@ -157,6 +157,13 @@ void chip8::StepEmulation()
 			this->v[(opcode & 0x0F00) >> 8] = this->v[(opcode & 0x00F0) >> 4];
 			break;
 		}
+		case 0x1:
+		{
+			// 8XY1
+			// Sets VX to VX or VY
+			this->v[(opcode & 0x0F00) >> 8] |= this->v[(opcode & 0x00F0) >> 4];
+			break;
+		}
 		case 0x2:
 		{
 			// 8XY2
@@ -282,7 +289,7 @@ void chip8::StepEmulation()
 		// Skips the next instruction if the key stored in VX is pressed.
 		// EXA1
 		// Skips the next instruction if the key stored in VX isn't pressed.
-		if (this->key[(opcode & 0x0F00) >> 8] == ((opcode & 0xFF) == 0x9E))
+		if ((this->key[v[(opcode & 0x0F00) >> 8]] != 0) == (((opcode & 0xFF) == 0x9E)))
 		{
 			this->pc += 2;
 		}

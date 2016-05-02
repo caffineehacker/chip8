@@ -18,6 +18,8 @@ public:
 
 	bool NeedsRender() { return needsRender; }
 
+	void SetKey(int keyNumber, bool state) { key[keyNumber] = state ? 1 : 0; };
+
 private:
 	unsigned char memory[4096]; // 4K memory
 	unsigned char v[16]; // Vx registers

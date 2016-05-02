@@ -11,6 +11,7 @@ public:
 
 private:
 	HANDLE hConsole;
-	HANDLE hBuffer;
+	HANDLE hBuffer1;
+	HANDLE hBuffer2;
 };
 
