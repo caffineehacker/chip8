@@ -113,7 +113,17 @@ void chip8::StepEmulation()
 	{
 		// 3XNN
 		// Skips the next instruction if VX == NN
-		if (this->v[(opcode & 0x0F00) >> 16] == (opcode & 0xFF))
+		if (this->v[(opcode & 0x0F00) >> 8] == (opcode & 0xFF))
+		{
+			this->pc += 2;
+		}
+		break;
+	}
+	case 0x4:
+	{
+		// 4XNN
+		// Skips the next instruction if VX doesn't equal NN
+		if (this->v[(opcode & 0x0F00) >> 8] != (opcode & 0x00FF))
 		{
 			this->pc += 2;
 		}
@@ -123,14 +133,62 @@ void chip8::StepEmulation()
 	{
 		// 6XNN
 		// Sets VX to NN
-		this->v[(opcode & 0x0F00) >> 16] = static_cast<unsigned char>(opcode & 0xFF);
+		this->v[(opcode & 0x0F00) >> 8] = static_cast<unsigned char>(opcode & 0xFF);
 		break;
 	}
 	case 0x7:
 	{
 		// 7XNN
 		// Adds NN to VX
-		this->v[(opcode & 0x0F00) >> 16] += static_cast<unsigned char>(opcode & 0xFF);
+		this->v[(opcode & 0x0F00) >> 8] += static_cast<unsigned char>(opcode & 0xFF);
+		break;
+	}
+	case 0x8:
+	{
+		unsigned char finalNibble = opcode & 0x000F;
+		switch (finalNibble)
+		{
+		case 0x0:
+		{
+			// 8XY0
+			// Sets VX to the value of VY
+			this->v[(opcode & 0x0F00) >> 8] = this->v[(opcode & 0x00F0) >> 4];
+			break;
+		}
+		case 0x2:
+		{
+			// 8XY2
+			// Sets VX to VX and VY
+			this->v[(opcode & 0x0F00) >> 8] &= this->v[(opcode & 0x00F0) >> 4];
+			break;
+		}
+		case 0x4:
+		{
+			// 8XY4
+			// Adds VY to VX. VF is set to 1 when there's a carry and to 0 when there isn't
+			unsigned char vy = this->v[(opcode & 0x00F0) >> 4];
+			unsigned char vx = this->v[(opcode & 0x0F00) >> 8];
+			this->v[(opcode & 0x0F00) >> 8] += vy;
+			// Set the carry flag
+			this->v[0xF] = (vx + vy) > 0xFF ? 1 : 0;
+			break;
+		}
+		case 0x5:
+		{
+			// 8XY5
+			/* VY is subtracted from VX. VF is set to 0 when there's a borrow and to 0 when there
+			 * isn't
+			 */
+			unsigned char vy = this->v[(opcode & 0x00F0) >> 4];
+			unsigned char vx = this->v[(opcode & 0x0F00) >> 8];
+			this->v[(opcode & 0x0F00) >> 8] -= vy;
+			// Set the carry flag
+			this->v[0xF] = (vx - vy) < 0 ? 1 : 0;
+			break;
+		}
+		default:
+			throw std::exception("Invalid opcode");
+		}
 		break;
 	}
 	case 0xa:
@@ -144,7 +202,7 @@ void chip8::StepEmulation()
 	{
 		// CXNN
 		// Sets VX to the result of a bitwise and operation on a random number and NN
-		this->v[(opcode & 0x0F00) >> 16] = (opcode & 0xFF) & (rand() % 0x100);
+		this->v[(opcode & 0x0F00) >> 8] = (opcode & 0xFF) & (rand() % 0x100);
 		break;
 	}
 	case 0xd:
@@ -193,7 +251,7 @@ void chip8::StepEmulation()
 		// Skips the next instruction if the key stored in VX is pressed.
 		// EXA1
 		// Skips the next instruction if the key stored in VX isn't pressed.
-		if (this->key[(opcode & 0x0F00) >> 16] == ((opcode & 0xFF) == 0x9E))
+		if (this->key[(opcode & 0x0F00) >> 8] == ((opcode & 0xFF) == 0x9E))
 		{
 			this->pc += 2;
 		}
@@ -221,6 +279,12 @@ void chip8::StepEmulation()
 		case 0x15:
 		{
 			this->delay_timer = this->v[secondNibble];
+			break;
+		}
+		case 0x18:
+		{
+			// Sets the sound timer to VX
+			this->sound_timer = this->v[secondNibble];
 			break;
 		}
 		case 0x29:
