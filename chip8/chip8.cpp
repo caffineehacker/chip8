@@ -60,6 +60,8 @@ bool chip8::LoadProgram(const char* path)
 
 void chip8::StepEmulation()
 {
+	needsRender = false;
+
 	// TODO: Consider doing a fixed time per frame other than 1
 	if (this->delay_timer > 0)
 	{
@@ -162,6 +164,13 @@ void chip8::StepEmulation()
 			this->v[(opcode & 0x0F00) >> 8] &= this->v[(opcode & 0x00F0) >> 4];
 			break;
 		}
+		case 0x3:
+		{
+			// 8XY3
+			// Sets VX to VX xor VY
+			this->v[(opcode & 0x0F00) >> 8] ^= this->v[(opcode & 0x00F0) >> 4];
+			break;
+		}
 		case 0x4:
 		{
 			// 8XY4
@@ -184,6 +193,26 @@ void chip8::StepEmulation()
 			this->v[(opcode & 0x0F00) >> 8] -= vy;
 			// Set the carry flag
 			this->v[0xF] = (vx - vy) < 0 ? 1 : 0;
+			break;
+		}
+		case 0x6:
+		{
+			// 8XY6
+			/* Shifts VX right by one. VF is set to the value of the least significant bit of VX
+			 * before the shift
+			 */
+			this->v[0xF] = this->v[(opcode & 0x0F00) >> 8] & 0x01;
+			this->v[(opcode & 0x0F00) >> 8] >>= 1;
+			break;
+		}
+		case 0xE:
+		{
+			// 8XYE
+			/* Shifts VX left by one. VF is set to the value of the most significant bit of VX
+			 * before the shift
+			 */
+			this->v[0xF] = (this->v[(opcode & 0x0F00) >> 8] & 0x80) >> 15;
+			this->v[(opcode & 0x0F00) >> 8] <<= 1;
 			break;
 		}
 		default:
@@ -224,9 +253,9 @@ void chip8::StepEmulation()
 		for (int row = 0; row < rows; row++)
 		{
 			unsigned char pixelRow = this->memory[this->I + row];
-			for (int x = startX; x < 8; x++)
+			for (int x = startX; x < startX + 4; x++)
 			{
-				if (((pixelRow & (0x0001 << x)) >> x) == 0)
+				if ((((pixelRow >> 4) & (0x0001 << (3 - (x - startX)))) >> (3 - (x - startX))) == 0)
 				{
 					// Pixel is empty and we draw in XOR mode
 					continue;
@@ -241,6 +270,8 @@ void chip8::StepEmulation()
 				}
 
 				this->gfx[actualX + (actualY * 64)] ^= 0x1;
+
+				needsRender = true;
 			}
 		}
 		break;
@@ -287,6 +318,12 @@ void chip8::StepEmulation()
 			this->sound_timer = this->v[secondNibble];
 			break;
 		}
+		case 0x1E:
+		{
+			// Adds VX to I
+			this->I += this->v[secondNibble];
+			break;
+		}
 		case 0x29:
 		{
 			/* From Wikipedia: Sets I to the location of the sprite for the character in VX.
@@ -307,6 +344,17 @@ void chip8::StepEmulation()
 			this->memory[this->I] = value / 100;
 			this->memory[this->I + 1] = (value / 10) % 10;
 			this->memory[this->I + 2] = value % 10;
+			break;
+		}
+		case 0x55:
+		{
+			// FX55
+			// Stores V0 to VX (including VX) in memory starting at address I
+			// NOTE: Modern interpreters don't change I, orginial ones did
+			for (int i = 0; i <= secondNibble; i++)
+			{
+				this->memory[this->I + i] = this->v[i];
+			}
 			break;
 		}
 		case 0x65:

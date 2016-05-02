@@ -11,6 +11,13 @@ public:
 	bool LoadProgram(const char* path);
 	void StepEmulation();
 
+	const unsigned char* GetGraphics()
+	{
+		return gfx;
+	};
+
+	bool NeedsRender() { return needsRender; }
+
 private:
 	unsigned char memory[4096]; // 4K memory
 	unsigned char v[16]; // Vx registers
@@ -28,5 +35,7 @@ private:
 
 	// The state of the keys on the keyboard
 	unsigned char key[16];
+
+	bool needsRender;
 };
 

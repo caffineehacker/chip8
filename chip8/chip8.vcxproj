@@ -143,13 +143,18 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="chip8.cpp" />
+    <ClCompile Include="ConsoleRenderer.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="chip8.h" />
+    <ClInclude Include="ConsoleRenderer.h" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Programs\PONG">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Programs\BLINKY">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
