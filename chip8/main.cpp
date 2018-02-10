@@ -12,7 +12,7 @@ void ClearConsoleInputBuffer() {
 int main() {
     chip8 c8;
     //if (!c8.LoadProgram("Programs\\PONG"))
-    if (!c8.LoadProgram("Programs\\BLINKY")) {
+    if (!c8.LoadProgram("Programs\\15PUZZLE")) {
         return 1;
     }
 

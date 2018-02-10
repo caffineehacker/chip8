@@ -18,7 +18,7 @@ public:
 
 	bool NeedsRender() { return needsRender; }
 
-	void SetKey(int keyNumber, bool state) { key[keyNumber] = state ? 1 : 0; };
+	void SetKey(int keyNumber, bool state);
 
 private:
 	unsigned char memory[4096]; // 4K memory
@@ -39,5 +39,6 @@ private:
 	unsigned char key[16];
 
 	bool needsRender;
+    bool waitForKeypress;
 };
 

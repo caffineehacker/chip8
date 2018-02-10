@@ -24,7 +24,7 @@ const unsigned char chip8_fontset[80] =
     0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
 
-chip8::chip8() : pc(0x200), delay_timer(0), sound_timer(0), I(0), sp(0) {
+chip8::chip8() : pc(0x200), delay_timer(0), sound_timer(0), I(0), sp(0), waitForKeypress(false) {
     memcpy_s(this->memory, sizeof(this->memory), chip8_fontset, sizeof(chip8_fontset));
     memset(this->gfx, 0, sizeof(this->gfx));
     memset(this->v, 0, sizeof(this->v));
@@ -53,8 +53,19 @@ bool chip8::LoadProgram(const char* path) {
     return true;
 }
 
+void chip8::SetKey(int keyNumber, bool state) {
+    key[keyNumber] = state ? 1 : 0;
+    if (state) {
+        waitForKeypress = false;
+    }
+}
+
 void chip8::StepEmulation() {
     needsRender = false;
+
+    if (waitForKeypress) {
+        return;
+    }
 
     // TODO: Consider doing a fixed time per frame other than 1
     if (this->delay_timer > 0) {
@@ -78,10 +89,15 @@ void chip8::StepEmulation() {
     switch (firstNibble) {
         case 0x0:
         {
-            if (opcode == 0x00EE) {
+            if (opcode == 0x00E0) {
+                // Clear the screen
+                memset(this->gfx, 0, sizeof(this->gfx));
+            } else if (opcode == 0x00EE) {
                 // Return
                 this->pc = this->stack[--this->sp];
                 break;
+            } else {
+                throw std::logic_error("Unrecognized opcode");
             }
             break;
         }
@@ -114,6 +130,15 @@ void chip8::StepEmulation() {
             // 4XNN
             // Skips the next instruction if VX doesn't equal NN
             if (this->v[(opcode & 0x0F00) >> 8] != (opcode & 0x00FF)) {
+                this->pc += 2;
+            }
+            break;
+        }
+        case 0x5:
+        {
+            // 5XY0
+            // 	Skips the next instruction if VX equals VY
+            if (this->v[(opcode & 0x0F00) >> 8] == this->v[(opcode & 0x00F0) >> 4]) {
                 this->pc += 2;
             }
             break;
@@ -209,25 +234,38 @@ void chip8::StepEmulation() {
                     break;
                 }
                 default:
-                    throw std::exception("Invalid opcode");
+                    throw std::logic_error("Unrecognized opcode");
             }
             break;
         }
-        case 0xa:
+        case 0x9:
+        {
+            // 9XY0
+            // Skips the next instruction if VX doesn't equals VY
+            if (this->v[(opcode & 0x0F00) >> 8] != this->v[(opcode & 0x00F0) >> 4]) {
+                this->pc += 2;
+            }
+            break;
+        }
+        case 0xA:
         {
             // ANNN
             // Sets I to the address NNN
             this->I = (opcode & 0x0FFF);
             break;
         }
-        case 0xc:
+        case 0xB:
+        {
+            throw std::logic_error("Unrecognized opcode");
+        }
+        case 0xC:
         {
             // CXNN
             // Sets VX to the result of a bitwise and operation on a random number and NN
             this->v[(opcode & 0x0F00) >> 8] = (opcode & 0xFF) & (rand() % 0x100);
             break;
         }
-        case 0xd:
+        case 0xD:
         {
             // DXYN
             /* From Wikipedia:
@@ -275,11 +313,9 @@ void chip8::StepEmulation() {
                 this->pc += 2;
             }
 
-#if _DEBUG
             if ((opcode & 0xFF) != 0x9E && (opcode & 0xFF) != 0xA1) {
-                throw std::exception("Invalid opcode");
+                throw std::logic_error("Unrecognized opcode");
             }
-#endif
 
             break;
         }
@@ -292,6 +328,12 @@ void chip8::StepEmulation() {
                 {
                     this->v[secondNibble] = this->delay_timer;
                     break;
+                }
+                case 0x0A:
+                {
+                    // Wait for any key press
+                    waitForKeypress = true;
+                    return;
                 }
                 case 0x15:
                 {
@@ -353,7 +395,7 @@ void chip8::StepEmulation() {
                 }
                 default:
                 {
-                    throw std::exception("Unknown opcode");
+                    throw std::logic_error("Unrecognized opcode");
                 }
             }
             break;
