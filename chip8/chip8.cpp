@@ -67,7 +67,7 @@ void chip8::StepEmulation() {
         return;
     }
 
-    // TODO: Consider doing a fixed time per frame other than 1
+    // TODO: Consider doing a fixed time per frame other than 1 (this should decremate at 60hz)
     if (this->delay_timer > 0) {
         this->delay_timer--;
     }
@@ -283,8 +283,8 @@ void chip8::StepEmulation() {
 
             for (int row = 0; row < rows; row++) {
                 unsigned char pixelRow = this->memory[this->I + row];
-                for (int x = startX; x < startX + 4; x++) {
-                    if ((((pixelRow >> 4) & (0x0001 << (3 - (x - startX)))) >> (3 - (x - startX))) == 0) {
+                for (int x = startX; x < startX + 8; x++) {
+                    if (((pixelRow >> (7 - (x - startX))) & 0x1) == 0) {
                         // Pixel is empty and we draw in XOR mode
                         continue;
                     }
