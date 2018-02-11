@@ -24,7 +24,8 @@ const unsigned char chip8_fontset[80] =
     0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
 
-chip8::chip8() : pc(0x200), delay_timer(0), sound_timer(0), I(0), sp(0), waitForKeypress(false) {
+chip8::chip8() : pc(0x200), delay_timer(0), sound_timer(0), I(0), sp(0),
+        waitForKeypress(false), millisecondsPassedSinceLastDelayChange(0) {
     memcpy_s(this->memory, sizeof(this->memory), chip8_fontset, sizeof(chip8_fontset));
     memset(this->gfx, 0, sizeof(this->gfx));
     memset(this->v, 0, sizeof(this->v));
@@ -60,16 +61,24 @@ void chip8::SetKey(int keyNumber, bool state) {
     }
 }
 
-void chip8::StepEmulation() {
+void chip8::StepEmulation(int milliseconds_passed) {
     needsRender = false;
 
     if (waitForKeypress) {
         return;
     }
 
-    // TODO: Consider doing a fixed time per frame other than 1 (this should decremate at 60hz)
     if (this->delay_timer > 0) {
-        this->delay_timer--;
+        millisecondsPassedSinceLastDelayChange += milliseconds_passed;
+        int delays_passed = millisecondsPassedSinceLastDelayChange / 17;
+        millisecondsPassedSinceLastDelayChange %= 17;
+        if (this->delay_timer < delays_passed) {
+            this->delay_timer = 0;
+        } else {
+            this->delay_timer -= delays_passed;
+        }
+    } else {
+        millisecondsPassedSinceLastDelayChange = 0;
     }
 
     if (this->sound_timer > 0) {

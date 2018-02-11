@@ -2,6 +2,7 @@
 #include "ConsoleRenderer.h"
 
 #include <windows.h>
+#include <chrono>
 
 void ClearConsoleInputBuffer() {
     INPUT_RECORD ClearingVar1[256];
@@ -12,13 +13,21 @@ void ClearConsoleInputBuffer() {
 int main() {
     chip8 c8;
     //if (!c8.LoadProgram("Programs\\PONG"))
-    if (!c8.LoadProgram("Programs\\15PUZZLE")) {
+    if (!c8.LoadProgram("Programs\\PONG2")) {
         return 1;
     }
 
     ConsoleRenderer renderer;
+    std::chrono::milliseconds lastLoopMiliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch());
     while (true) {
-        c8.StepEmulation();
+        std::chrono::milliseconds currentLoopMiliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch());
+        if ((currentLoopMiliseconds - lastLoopMiliseconds).count() <= 2) {
+            // Only execute at 500 Hz
+            continue;
+        }
+
+        c8.StepEmulation((currentLoopMiliseconds - lastLoopMiliseconds).count());
+        lastLoopMiliseconds = currentLoopMiliseconds;
 
         if (c8.NeedsRender()) {
             auto graphics = c8.GetGraphics();
@@ -47,7 +56,7 @@ int main() {
         c8.SetKey(0xF, GetAsyncKeyState('V') & 0x8000);
 
         // TODO: Time the frames and do a specific FPS
-        Sleep(1);
+        //Sleep(1);
     }
 
     return 0;

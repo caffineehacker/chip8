@@ -9,7 +9,7 @@ public:
 	~chip8();
 
 	bool LoadProgram(const char* path);
-	void StepEmulation();
+	void StepEmulation(int milliseconds_passed);
 
 	const unsigned char* GetGraphics()
 	{
@@ -40,5 +40,7 @@ private:
 
 	bool needsRender;
     bool waitForKeypress;
+
+    int millisecondsPassedSinceLastDelayChange;
 };
 
