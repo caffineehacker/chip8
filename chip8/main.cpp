@@ -13,7 +13,7 @@ void ClearConsoleInputBuffer() {
 int main() {
     chip8 c8;
     //if (!c8.LoadProgram("Programs\\PONG"))
-    if (!c8.LoadProgram("Programs\\PONG2")) {
+    if (!c8.LoadProgram("Programs\\TETRIS")) {
         return 1;
     }
 
@@ -54,9 +54,6 @@ int main() {
         c8.SetKey(0x0, GetAsyncKeyState('X') & 0x8000);
         c8.SetKey(0xB, GetAsyncKeyState('C') & 0x8000);
         c8.SetKey(0xF, GetAsyncKeyState('V') & 0x8000);
-
-        // TODO: Time the frames and do a specific FPS
-        //Sleep(1);
     }
 
     return 0;
