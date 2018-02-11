@@ -31,7 +31,7 @@ void ConsoleRenderer::Render(const unsigned char* buffer)
 	if (0 == WriteConsoleOutput(this->hBuffer2, char_info, { 64, 32 }, { 0, 0 }, &output_rect))
 	{
 		DWORD error = GetLastError();
-		throw std::exception((std::string("Drawing failed") + itoa(error, nullptr, 10)).c_str());
+		throw std::exception((std::string("Drawing failed") + _itoa(error, nullptr, 10)).c_str());
 	}
 
 	SetConsoleActiveScreenBuffer(this->hBuffer2);
