@@ -202,9 +202,9 @@ void chip8::StepEmulation(int milliseconds_passed) {
                 {
                     // 8XY4
                     // Adds VY to VX. VF is set to 1 when there's a carry and to 0 when there isn't
-                    unsigned char vy = this->v[(opcode & 0x00F0) >> 4];
-                    unsigned char vx = this->v[(opcode & 0x0F00) >> 8];
-                    this->v[(opcode & 0x0F00) >> 8] += vy;
+                    int vy = this->v[(opcode & 0x00F0) >> 4];
+                    int vx = this->v[(opcode & 0x0F00) >> 8];
+                    this->v[(opcode & 0x0F00) >> 8] = (vx + vy) & 0xFF;
                     // Set the carry flag
                     this->v[0xF] = (vx + vy) > 0xFF ? 1 : 0;
                     break;
@@ -215,11 +215,11 @@ void chip8::StepEmulation(int milliseconds_passed) {
                     /* VY is subtracted from VX. VF is set to 0 when there's a borrow and to 0 when there
                      * isn't
                      */
-                    unsigned char vy = this->v[(opcode & 0x00F0) >> 4];
-                    unsigned char vx = this->v[(opcode & 0x0F00) >> 8];
-                    this->v[(opcode & 0x0F00) >> 8] -= vy;
-                    // Set the carry flag
-                    this->v[0xF] = (vx - vy) < 0 ? 1 : 0;
+                    int vy = this->v[(opcode & 0x00F0) >> 4];
+                    int vx = this->v[(opcode & 0x0F00) >> 8];
+                    this->v[(opcode & 0x0F00) >> 8] = (vx - vy) & 0xFF;
+                    // Set the borrow flag if a borrow did NOT happen
+                    this->v[0xF] = vx > vy ? 1 : 0;
                     break;
                 }
                 case 0x6:
